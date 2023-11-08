@@ -48,19 +48,25 @@ class ProductResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
-                ->sortable()
-                ->searchable(isIndividual: true, isGlobal: false),
+                Tables\Columns\TextInputColumn::make('name')
+                ->rules(['required', 'min:3']),
+                //->searchable(isIndividual: true, isGlobal: false),
                 Tables\Columns\TextColumn::make('price')
                 ->sortable()
-                ->searchable(isIndividual: true, isGlobal: false)
+                //->searchable(isIndividual: true, isGlobal: false)
                 ->money('myr')
                 ->getStateUsing(function (Product $record): float {
                 return $record->price / 100;
-                }),
-                Tables\Columns\TextColumn::make('status'),
-                Tables\Columns\TextColumn::make('category.name'),
-                Tables\Columns\TextColumn::make('tags.name'),
+                })
+                ->alignCenter(),
+                Tables\Columns\CheckboxColumn::make('is_active'),
+                Tables\Columns\SelectColumn::make('status')
+                ->options(self::$statuses),
+                Tables\Columns\TextColumn::make('category.name')
+                ->label('Category name'),
+                Tables\Columns\TextColumn::make('tags.name')->badge(),
+                Tables\Columns\TextColumn::make('created_at')
+                ->since(),
             ])
             ->defaultSort('name', 'asc')
             ->filters([
@@ -91,7 +97,7 @@ class ProductResource extends Resource
                             );
                     }),
             ], layout: Tables\Enums\FiltersLayout::AboveContent)
-            ->filtersFormColumns(2)
+            ->filtersFormColumns(4)
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
