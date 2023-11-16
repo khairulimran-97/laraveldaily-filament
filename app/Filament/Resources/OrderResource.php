@@ -16,9 +16,10 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class OrderResource extends Resource
 {
+    protected static ?int $navigationSort = 1;
     protected static ?string $model = Order::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
 
     public static function form(Form $form): Form
     {
@@ -26,6 +27,11 @@ class OrderResource extends Resource
             ->schema([
                 //
             ]);
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return Order::whereDate('created_at', today())->count() ? 'NEW' : '';
     }
 
     public static function table(Table $table): Table

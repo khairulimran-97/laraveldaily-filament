@@ -7,14 +7,30 @@ use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ProductResource extends Resource
 {
+    protected static ?string $recordTitleAttribute = 'name';
+    protected static int $globalSearchResultsLimit = 3;
+
+    public static function getGlobalSearchResultUrl(Model $record): string
+    {
+        return self::getUrl('view', ['record' => $record]);
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name'];
+    }
+    protected static ?int $navigationSort = 2;
 
     protected static array $statuses = [
         'in stock' => 'in stock',
@@ -30,18 +46,38 @@ class ProductResource extends Resource
     {
         return $form
             ->schema([
+                // Forms\Components\Section::make('Main data')
+                // ->description('What users totally need to fill in')
+                Forms\Components\Wizard::make([
+                Forms\Components\Wizard\Step::make('Main data')
+            ->schema([
                 Forms\Components\TextInput::make('name')
+                ->label(__('Product name'))
                 ->required()
-                ->unique(ignoreRecord: true),
+                ->unique(ignoreRecord: true)
+                ->live(onBlur: true)
+                ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('slug', str()->slug($state))),
+                Forms\Components\TextInput::make('slug')
+                ->visibleOn('create')
+                ->required(),
                 Forms\Components\TextInput::make('price')
                 ->required()
                 ->rule('numeric'),
+            ]),
+                // Forms\Components\Section::make('Additional data')
+                Forms\Components\Wizard\Step::make('Additional data')
+            ->schema([
                 Forms\Components\Radio::make('status')
                 ->options(self::$statuses),
                 Forms\Components\Select::make('category_id')
                 ->relationship('category', 'name'),
+                Forms\Components\RichEditor::make('description')
+                ->columnSpanFull()
+                ->required(),
+            ]),
+            ])
 
-            ]);
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -59,7 +95,9 @@ class ProductResource extends Resource
                 return $record->price / 100;
                 })
                 ->alignCenter(),
-                Tables\Columns\CheckboxColumn::make('is_active'),
+                Tables\Columns\ToggleColumn::make('is_active')
+                ->onColor('success') // default value: "primary"
+                ->offColor('danger'),
                 Tables\Columns\SelectColumn::make('status')
                 ->options(self::$statuses),
                 Tables\Columns\TextColumn::make('category.name')
@@ -99,6 +137,7 @@ class ProductResource extends Resource
             ], layout: Tables\Enums\FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -125,6 +164,18 @@ class ProductResource extends Resource
             'index' => Pages\ListProducts::route('/'),
             'create' => Pages\CreateProduct::route('/create'),
            'edit' => Pages\EditProduct::route('/{record}/edit'),
+           'view' => Pages\ViewProduct::route('/{record}'),
         ];
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                TextEntry::make('name'),
+                TextEntry::make('price'),
+                TextEntry::make('is_active'),
+                TextEntry::make('status'),
+            ]);
     }
 }
