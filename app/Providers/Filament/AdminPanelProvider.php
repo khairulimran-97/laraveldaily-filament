@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\ApplyTenantScopes;
+use App\Models\Company;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -16,6 +18,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Jeffgreco13\FilamentBreezy\BreezyCore;
 
@@ -25,6 +28,10 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
+            ->tenant(Company::class)
+            ->tenantMiddleware([
+                ApplyTenantScopes::class,
+            ], isPersistent: true)
             ->id('admin')
             ->path('panel')
             ->login()
@@ -34,6 +41,14 @@ class AdminPanelProvider extends PanelProvider
             ->profile()
             ->plugin(
                 BreezyCore::make()
+                ->myProfile(
+                    shouldRegisterUserMenu: true, // Sets the 'account' link in the panel User Menu (default = true)
+                    shouldRegisterNavigation: true, // Adds a main navigation item for the My Profile page (default = false)
+                    hasAvatars: false, // Enables the avatar upload form component (default = false)
+                    slug: 'my-profile' // Sets the slug for the profile page (default = 'my-profile')
+                )
+                ->enableSanctumTokens()
+
             )
             ->colors([
                 'danger' => Color::Rose,
@@ -53,7 +68,6 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
 
             ])
-            ->topNavigation()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
