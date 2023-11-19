@@ -28,10 +28,7 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
-            ->tenant(Company::class)
-            ->tenantMiddleware([
-                ApplyTenantScopes::class,
-            ], isPersistent: true)
+
             ->id('admin')
             ->path('panel')
             ->login()
@@ -50,6 +47,11 @@ class AdminPanelProvider extends PanelProvider
                 ->enableSanctumTokens()
 
             )
+
+            ->plugins([
+                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make()
+            ])
+
             ->colors([
                 'danger' => Color::Rose,
                 'gray' => Color::Gray,
